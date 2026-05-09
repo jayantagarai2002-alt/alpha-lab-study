@@ -44,7 +44,7 @@ public class MainActivity extends AppCompatActivity implements
         ModernWebViewClient.WebViewListener,
         ModernWebChromeClient.WebChromeListener,
         JavaScriptBridge.JavaScriptExecutor {
-    
+
     private WebView webView;
     private ProgressBar progressBar;
     private LinearLayout errorLayout;
@@ -56,52 +56,64 @@ public class MainActivity extends AppCompatActivity implements
     private ValueCallback<Uri[]> filePathCallback;
     private ActivityResultLauncher<Intent> fileChooserLauncher;
     private BroadcastReceiver mediaControlReceiver;
-    
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        
-        // CHANGED TO TRUE: This stops the app from hiding behind your phone's navigation keys!
+
+        // This stops the app from hiding behind your phone's navigation keys!
         WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
-        
+
         setContentView(R.layout.activity_main);
-        
+
         initializeManagers();
         initializeUI();
         setupWebView();
         setupEventListeners();
-        
-        // MODERN BACK BUTTON HANDLER FOR ANDROID 13/14+
+
+        // SMARTER SPA BACK BUTTON HANDLER FOR NETLIFY SITES
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
-                if (webView != null && webView.canGoBack()) {
-                    webView.goBack(); // Go back to the previous webpage
+                if (webView != null) {
+                    webView.evaluateJavascript("window.history.length > 1", value -> {
+                        if ("true".equals(value) && webView.canGoBack()) {
+                            webView.goBack(); // Uses native history if available
+                        } else {
+                            webView.evaluateJavascript("window.history.back()", null); // Forces JS history back
+                            
+                            // If we are truly at the start, close the app
+                            if (!webView.canGoBack()) {
+                                setEnabled(false);
+                                getOnBackPressedDispatcher().onBackPressed();
+                            }
+                        }
+                    });
                 } else {
-                    setEnabled(false); // If on homepage, let the system close the app
+                    setEnabled(false);
                     getOnBackPressedDispatcher().onBackPressed();
                 }
             }
         });
-        
+
         if (AppConfig.isMediaNotificationsEnabled()) {
             registerMediaReceiver();
         }
-        
+
         if (AppConfig.SHOW_SPLASH_SCREEN) {
             showSplashScreen();
         } else {
             loadTargetWebsite();
         }
-        
+
         handleIntent(getIntent());
     }
-    
+
     private void initializeManagers() {
         webViewManager = WebViewManager.getInstance();
         permissionManager = new PermissionManager(this);
     }
-    
+
     private void initializeUI() {
         webView = findViewById(R.id.webView);
         progressBar = findViewById(R.id.progressBar);
@@ -109,7 +121,7 @@ public class MainActivity extends AppCompatActivity implements
         splashLayout = findViewById(R.id.splashLayout);
         errorTitle = findViewById(R.id.errorTitle);
         errorMessage = findViewById(R.id.errorMessage);
-        
+
         fileChooserLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
@@ -124,7 +136,7 @@ public class MainActivity extends AppCompatActivity implements
             }
         );
     }
-    
+
     private void setupWebView() {
         webViewManager.setupWebView(webView, this);
         if (AppConfig.isAutoThemeAdaptationEnabled()) {
@@ -135,14 +147,14 @@ public class MainActivity extends AppCompatActivity implements
         }
         WebViewManager.getInstance().enableDebugging();
     }
-    
+
     private void setupEventListeners() {
         findViewById(R.id.retryButton).setOnClickListener(v -> {
             hideError();
             loadTargetWebsite();
         });
     }
-    
+
     private void showSplashScreen() {
         splashLayout.setVisibility(View.VISIBLE);
         webView.setVisibility(View.GONE);
@@ -151,19 +163,19 @@ public class MainActivity extends AppCompatActivity implements
             loadTargetWebsite();
         }, AppConfig.SPLASH_DURATION_MS);
     }
-    
+
     private void hideSplashScreen() {
         if (splashLayout != null) {
             splashLayout.setVisibility(View.GONE);
             webView.setVisibility(View.VISIBLE);
         }
     }
-    
+
     private void loadTargetWebsite() {
         String url = AppConfig.getMainUrl();
         webView.loadUrl(url);
     }
-    
+
     private void showError(String title, String message) {
         runOnUiThread(() -> {
             webView.setVisibility(View.GONE);
@@ -172,18 +184,18 @@ public class MainActivity extends AppCompatActivity implements
             errorMessage.setText(message);
         });
     }
-    
+
     private void hideError() {
         runOnUiThread(() -> {
             errorLayout.setVisibility(View.GONE);
             webView.setVisibility(View.VISIBLE);
         });
     }
-    
+
     @SuppressLint("UnspecifiedRegisterReceiverFlag")
     private void registerMediaReceiver() {
         if (!AppConfig.isMediaNotificationsEnabled()) return;
-        
+
         mediaControlReceiver = new BroadcastReceiver() {
             @Override
             public void onReceive(Context context, Intent intent) {
@@ -196,7 +208,7 @@ public class MainActivity extends AppCompatActivity implements
                 }
             }
         };
-        
+
         IntentFilter filter = new IntentFilter("com.monstertechno.webview.MEDIA_CONTROL");
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(mediaControlReceiver, filter, Context.RECEIVER_NOT_EXPORTED);
@@ -204,13 +216,13 @@ public class MainActivity extends AppCompatActivity implements
             registerReceiver(mediaControlReceiver, filter);
         }
     }
-    
+
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         handleIntent(intent);
     }
-    
+
     private void handleIntent(Intent intent) {
         if (Intent.ACTION_VIEW.equals(intent.getAction())) {
             Uri data = intent.getData();
@@ -222,7 +234,7 @@ public class MainActivity extends AppCompatActivity implements
             }
         }
     }
-    
+
     @Override
     public void onConfigurationChanged(Configuration newConfig) {
         super.onConfigurationChanged(newConfig);
@@ -230,7 +242,7 @@ public class MainActivity extends AppCompatActivity implements
             themeManager.onConfigurationChanged(newConfig);
         }
     }
-    
+
     @Override
     protected void onDestroy() {
         super.onDestroy();
@@ -241,23 +253,23 @@ public class MainActivity extends AppCompatActivity implements
             webView.destroy();
         }
     }
-    
+
     @Override
     public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         permissionManager.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
-    
+
     @Override
     public void onPageLoadStarted(String url) {
         runOnUiThread(() -> {
-            progressBar.setVisibility(View.VISIBLE);
+            progressBar.setVisibility(View.GONE); // FIXED: No more blue loading line!
             progressBar.setProgress(0);
             hideError();
             hideSplashScreen();
         });
     }
-    
+
     @Override
     public void onPageLoadFinished(String url) {
         runOnUiThread(() -> {
@@ -270,7 +282,7 @@ public class MainActivity extends AppCompatActivity implements
             }
         });
     }
-    
+
     @Override
     public void onPageLoadError(String url, int errorCode, String description) {
         showError("Connection Error", description);
@@ -278,8 +290,8 @@ public class MainActivity extends AppCompatActivity implements
             progressBar.setVisibility(View.GONE);
         });
     }
-    
-        @Override
+
+    @Override
     public void onDownloadRequested(String url) {
         if (AppConfig.isFileDownloadsEnabled()) {
             Toast.makeText(this, "Opening document...", Toast.LENGTH_SHORT).show();
@@ -294,7 +306,6 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
 
-    
     @Override
     public void onProgressChanged(int progress) {
         runOnUiThread(() -> {
@@ -304,16 +315,16 @@ public class MainActivity extends AppCompatActivity implements
             }
         });
     }
-    
+
     @Override
     public void onTitleChanged(String title) {
         runOnUiThread(() -> setTitle(title));
     }
-    
+
     @Override
     public void onIconChanged(Bitmap icon) {
     }
-    
+
     @Override
     public void onFileChooserRequested(WebChromeClient.FileChooserParams params, ValueCallback<Uri[]> callback) {
         if (!AppConfig.isFileDownloadsEnabled()) {
@@ -329,7 +340,7 @@ public class MainActivity extends AppCompatActivity implements
             Toast.makeText(this, "File chooser not available", Toast.LENGTH_SHORT).show();
         }
     }
-    
+
     @Override
     public void onJsAlert(String url, String message, JsResult result) {
         new MaterialAlertDialogBuilder(this)
@@ -339,7 +350,7 @@ public class MainActivity extends AppCompatActivity implements
             .setOnCancelListener(dialog -> result.cancel())
             .show();
     }
-    
+
     @Override
     public void onJsConfirm(String url, String message, JsResult result) {
         new MaterialAlertDialogBuilder(this)
@@ -350,7 +361,7 @@ public class MainActivity extends AppCompatActivity implements
             .setOnCancelListener(dialog -> result.cancel())
             .show();
     }
-    
+
     @Override
     public void onJsPrompt(String url, String message, String defaultValue, JsPromptResult result) {
         EditText input = new EditText(this);
@@ -364,12 +375,12 @@ public class MainActivity extends AppCompatActivity implements
             .setOnCancelListener(dialog -> result.cancel())
             .show();
     }
-    
+
     @Override
     public void executeJavaScript(String script) {
         runOnUiThread(() -> webView.evaluateJavascript(script, null));
     }
-    
+
     public void testStatusBarColor(String color) {
         if (themeManager != null) {
             themeManager.testThemeColor(color);
