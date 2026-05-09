@@ -5,6 +5,8 @@
 
         <item name="android:navigationBarColor">#FFFFFF</item>
         <item name="android:windowLightNavigationBar" tools:targetApi="o">true</item>
+        
+        <item name="android:navigationBarDividerColor" tools:targetApi="p">#FFFFFF</item>
     </style>
 
     <style name="Theme.WebViewApplication" parent="Base.Theme.WebViewApplication" />
