@@ -88,12 +88,12 @@ public class AppConfig {
     /**
      * App name for notifications and dialogs
      */
-    public static final String APP_NAME = "WebView App";
+    public static final String APP_NAME = "Alpha Lab Study";
     
     /**
      * User agent suffix to identify the app
      */
-    public static final String USER_AGENT_SUFFIX = " WebViewApp/1.0";
+    public static final String USER_AGENT_SUFFIX = " Alphalabstudy/1.0";
     
     // ========================================
     // AUTO-GENERATION HELPER METHODS
