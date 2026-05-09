@@ -400,4 +400,18 @@ public class MainActivity extends AppCompatActivity implements
             themeManager.testThemeColor(color);
         }
     }
+           @Override
+    public void onBackPressed() {
+        // Find the WebView in this activity (the template usually names it 'webView' or 'mWebView')
+        android.webkit.WebView webView = findViewById(R.id.webview); 
+        
+        if (webView != null && webView.canGoBack()) {
+            // If there is page history, go back to the previous webpage
+            webView.goBack();
+        } else {
+            // If we are on the homepage, exit the app normally
+            super.onBackPressed();
+        }
+    }
+ 
 }
