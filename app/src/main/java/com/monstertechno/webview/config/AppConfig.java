@@ -78,12 +78,12 @@ public class AppConfig {
     /**
      * Show splash screen on app start
      */
-    public static final boolean SHOW_SPLASH_SCREEN = true;
+    public static final boolean SHOW_SPLASH_SCREEN = false;
     
     /**
      * Splash screen duration in milliseconds
      */
-    public static final int SPLASH_DURATION_MS = 2000;
+    public static final int SPLASH_DURATION_MS = 0;
     
     /**
      * App name for notifications and dialogs
