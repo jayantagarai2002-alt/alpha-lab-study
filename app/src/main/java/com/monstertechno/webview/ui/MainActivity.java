@@ -279,12 +279,21 @@ public class MainActivity extends AppCompatActivity implements
         });
     }
     
-    @Override
+        @Override
     public void onDownloadRequested(String url) {
         if (AppConfig.isFileDownloadsEnabled()) {
-            Toast.makeText(this, "Download started", Toast.LENGTH_SHORT).show();
+            Toast.makeText(this, "Opening document...", Toast.LENGTH_SHORT).show();
+            try {
+                // This hands the file off to the phone's native browser/download manager
+                Intent intent = new Intent(Intent.ACTION_VIEW);
+                intent.setData(Uri.parse(url));
+                startActivity(intent);
+            } catch (Exception e) {
+                Toast.makeText(this, "Unable to open file link", Toast.LENGTH_SHORT).show();
+            }
         }
     }
+
     
     @Override
     public void onProgressChanged(int progress) {
