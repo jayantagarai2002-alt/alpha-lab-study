@@ -7,6 +7,7 @@ import android.net.Uri;
 import android.net.http.SslError;
 import android.os.Build;
 import android.webkit.*;
+import android.widget.Toast;
 
 import androidx.browser.customtabs.CustomTabsIntent;
 import androidx.core.content.ContextCompat;
@@ -49,12 +50,28 @@ public class ModernWebViewClient extends WebViewClientCompat {
     public boolean shouldOverrideUrlLoading(WebView view, WebResourceRequest request) {
         String url = request.getUrl().toString();
         
-        // Handle special URL schemes
-        if (url.startsWith("tel:") || url.startsWith("mailto:") || url.startsWith("sms:")) {
-            Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
-            if (intent.resolveActivity(context.getPackageManager()) != null) {
+        // 1. Handle special URL schemes (Phone, Email, SMS, WhatsApp, Telegram, UPI)
+        if (url.startsWith("tel:") || url.startsWith("mailto:") || url.startsWith("sms:") ||
+            url.startsWith("whatsapp:") || url.startsWith("tg:") || url.startsWith("upi:") || 
+            url.startsWith("intent:")) {
+            try {
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
                 context.startActivity(intent);
                 return true;
+            } catch (Exception e) {
+                Toast.makeText(context, "App not installed on your device", Toast.LENGTH_SHORT).show();
+                return true;
+            }
+        }
+        
+        // 2. Force social/chat links to open in native apps instead of Custom Tabs
+        if (url.contains("wa.me/") || url.contains("t.me/") || url.contains("youtube.com/watch") || url.contains("youtu.be/")) {
+            try {
+                Intent intent = new Intent(Intent.ACTION_VIEW, Uri.parse(url));
+                context.startActivity(intent);
+                return true;
+            } catch (Exception e) {
+                // If app isn't installed, let it fall through to Custom Tabs below
             }
         }
         
