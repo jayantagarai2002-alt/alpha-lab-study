@@ -24,6 +24,7 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
@@ -60,8 +61,8 @@ public class MainActivity extends AppCompatActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        // This makes the app content stretch from top to bottom behind transparent bars
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
+        // CHANGED TO TRUE: This stops the app from hiding behind your phone's navigation keys!
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
         
         setContentView(R.layout.activity_main);
         
@@ -69,6 +70,19 @@ public class MainActivity extends AppCompatActivity implements
         initializeUI();
         setupWebView();
         setupEventListeners();
+        
+        // MODERN BACK BUTTON HANDLER FOR ANDROID 13/14+
+        getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (webView != null && webView.canGoBack()) {
+                    webView.goBack(); // Go back to the previous webpage
+                } else {
+                    setEnabled(false); // If on homepage, let the system close the app
+                    getOnBackPressedDispatcher().onBackPressed();
+                }
+            }
+        });
         
         if (AppConfig.isMediaNotificationsEnabled()) {
             registerMediaReceiver();
@@ -206,16 +220,6 @@ public class MainActivity extends AppCompatActivity implements
                     webView.loadUrl(url);
                 }
             }
-        }
-    }
-    
-    @SuppressLint("GestureBackNavigation")
-    @Override
-    public void onBackPressed() {
-        if (webView != null && webView.canGoBack()) {
-            webView.goBack();
-        } else {
-            super.onBackPressed();
         }
     }
     
