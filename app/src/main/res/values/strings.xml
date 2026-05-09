@@ -1,5 +1,5 @@
 <resources>
-    <string name="app_name">WebView Wrapper</string>
+    <string name="app_name">Alpha lab study</string>
     
     <!-- Error Messages -->
     <string name="connection_error">Connection Error</string>
