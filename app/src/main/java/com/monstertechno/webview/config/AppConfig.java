@@ -73,7 +73,7 @@ public class AppConfig {
      * When enabled, the app will automatically detect website's theme colors
      * and adapt the status bar color accordingly (dark/light mode + theme colors)
      */
-    public static final boolean ENABLE_AUTO_THEME_ADAPTATION = true;
+    public static final boolean ENABLE_AUTO_THEME_ADAPTATION = false;
     
     /**
      * Show splash screen on app start
