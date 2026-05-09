@@ -62,30 +62,35 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
-        // NUCLEAR OPTION: Completely disable Dark Mode for the App Wrapper
+        // 1. NUCLEAR OPTION: Kill Android Dark Mode so it never overrides our custom styling
         AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
-        
+
         super.onCreate(savedInstanceState);
 
-        // Force Android to let us paint the system bars
+        // 2. Allow us to paint the exact colors of the system bars
         getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
-        
-        // Paint the Header and Footer pure white
+
+        // 3. PREMIUM COLOR MATCHING (The Secret to Native Look)
+        // TOP HEADER: Pure white to match the Alpha Lab Study logo bar
         getWindow().setStatusBarColor(android.graphics.Color.parseColor("#FFFFFF"));
-        getWindow().setNavigationBarColor(android.graphics.Color.parseColor("#FFFFFF"));
+        
+        // BOTTOM FOOTER: Soft light-blue/gray to perfectly blend with your website background!
+        getWindow().setNavigationBarColor(android.graphics.Color.parseColor("#F4F6F9")); 
+        
+        // DIVIDER LINE: Completely invisible
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
-            getWindow().setNavigationBarDividerColor(android.graphics.Color.parseColor("#FFFFFF"));
+            getWindow().setNavigationBarDividerColor(android.graphics.Color.TRANSPARENT);
         }
 
-        // Fit content properly so nothing overlaps
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
-
-        // Force clock, battery, and bottom navigation pill to be dark so they are visible
+        // 4. Force clock, battery, and bottom navigation gesture line to be visible
         WindowInsetsControllerCompat windowController = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
         if (windowController != null) {
             windowController.setAppearanceLightStatusBars(true);
             windowController.setAppearanceLightNavigationBars(true);
         }
+
+        // 5. Fit content so nothing overlaps the gesture line
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
 
         setContentView(R.layout.activity_main);
 
