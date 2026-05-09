@@ -44,30 +44,23 @@ public class MainActivity extends AppCompatActivity implements
         ModernWebChromeClient.WebChromeListener,
         JavaScriptBridge.JavaScriptExecutor {
     
-    // UI Components
     private WebView webView;
     private ProgressBar progressBar;
     private LinearLayout errorLayout;
     private LinearLayout splashLayout;
     private TextView errorTitle, errorMessage;
-    
-    // Managers
     private WebViewManager webViewManager;
     private PermissionManager permissionManager;
     private ThemeManager themeManager;
-    
-    // File chooser
     private ValueCallback<Uri[]> filePathCallback;
     private ActivityResultLauncher<Intent> fileChooserLauncher;
-    
-    // Media control receiver
     private BroadcastReceiver mediaControlReceiver;
     
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         
-        // Enable edge-to-edge
+        // This makes the app content stretch from top to bottom behind transparent bars
         WindowCompat.setDecorFitsSystemWindows(getWindow(), false);
         
         setContentView(R.layout.activity_main);
@@ -81,14 +74,12 @@ public class MainActivity extends AppCompatActivity implements
             registerMediaReceiver();
         }
         
-        // Show splash screen if enabled
         if (AppConfig.SHOW_SPLASH_SCREEN) {
             showSplashScreen();
         } else {
             loadTargetWebsite();
         }
         
-        // Handle intent if app was opened with URL
         handleIntent(getIntent());
     }
     
@@ -98,7 +89,6 @@ public class MainActivity extends AppCompatActivity implements
     }
     
     private void initializeUI() {
-        // Find views
         webView = findViewById(R.id.webView);
         progressBar = findViewById(R.id.progressBar);
         errorLayout = findViewById(R.id.errorLayout);
@@ -106,7 +96,6 @@ public class MainActivity extends AppCompatActivity implements
         errorTitle = findViewById(R.id.errorTitle);
         errorMessage = findViewById(R.id.errorMessage);
         
-        // Setup file chooser launcher
         fileChooserLauncher = registerForActivityResult(
             new ActivityResultContracts.StartActivityForResult(),
             result -> {
@@ -124,23 +113,16 @@ public class MainActivity extends AppCompatActivity implements
     
     private void setupWebView() {
         webViewManager.setupWebView(webView, this);
-        
-        // Initialize theme manager after WebView setup
         if (AppConfig.isAutoThemeAdaptationEnabled()) {
             themeManager = new ThemeManager(this, webView);
         }
-        
-        // Add JavaScript bridge only if enabled
         if (!AppConfig.isJavaScriptBridgeEnabled()) {
             webView.removeJavascriptInterface("AndroidBridge");
         }
-        
-        // Enable debugging for development
         WebViewManager.getInstance().enableDebugging();
     }
     
     private void setupEventListeners() {
-        // Error layout retry button
         findViewById(R.id.retryButton).setOnClickListener(v -> {
             hideError();
             loadTargetWebsite();
@@ -150,8 +132,6 @@ public class MainActivity extends AppCompatActivity implements
     private void showSplashScreen() {
         splashLayout.setVisibility(View.VISIBLE);
         webView.setVisibility(View.GONE);
-        
-        // Hide splash after delay
         new Handler(Looper.getMainLooper()).postDelayed(() -> {
             hideSplashScreen();
             loadTargetWebsite();
@@ -195,7 +175,6 @@ public class MainActivity extends AppCompatActivity implements
             public void onReceive(Context context, Intent intent) {
                 String action = intent.getStringExtra("action");
                 if ("play".equals(action) || "pause".equals(action)) {
-                    // Execute JavaScript to control media playback
                     String jsCode = action.equals("play") ? 
                         "if(document.querySelector('video, audio')) { document.querySelector('video, audio').play(); }" :
                         "if(document.querySelector('video, audio')) { document.querySelector('video, audio').pause(); }";
@@ -223,7 +202,6 @@ public class MainActivity extends AppCompatActivity implements
             Uri data = intent.getData();
             if (data != null) {
                 String url = data.toString();
-                // Only load URLs from our target host, others open in Custom Tabs
                 if (AppConfig.isAllowedHost(url)) {
                     webView.loadUrl(url);
                 }
@@ -266,7 +244,6 @@ public class MainActivity extends AppCompatActivity implements
         permissionManager.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
     
-    // WebViewListener implementations
     @Override
     public void onPageLoadStarted(String url) {
         runOnUiThread(() -> {
@@ -281,15 +258,9 @@ public class MainActivity extends AppCompatActivity implements
     public void onPageLoadFinished(String url) {
         runOnUiThread(() -> {
             progressBar.setVisibility(View.GONE);
-            
-            // Adapt theme from website after page loads
             if (themeManager != null) {
-                // Small delay to ensure page is fully rendered and scripts executed
                 webView.postDelayed(() -> {
-                    android.util.Log.d("MainActivity", "Page load finished, triggering theme adaptation for URL: " + url);
                     themeManager.adaptThemeFromWebsite();
-                    
-                    // Additional delay for testing - try again with more time
                     webView.postDelayed(() -> themeManager.forceThemeDetection(), 2000);
                 }, 1000);
             }
@@ -311,7 +282,6 @@ public class MainActivity extends AppCompatActivity implements
         }
     }
     
-    // WebChromeListener implementations
     @Override
     public void onProgressChanged(int progress) {
         runOnUiThread(() -> {
@@ -324,13 +294,11 @@ public class MainActivity extends AppCompatActivity implements
     
     @Override
     public void onTitleChanged(String title) {
-        // Update window title if needed
         runOnUiThread(() -> setTitle(title));
     }
     
     @Override
     public void onIconChanged(Bitmap icon) {
-        // Icon changes handled automatically
     }
     
     @Override
@@ -339,7 +307,6 @@ public class MainActivity extends AppCompatActivity implements
             callback.onReceiveValue(null);
             return;
         }
-        
         filePathCallback = callback;
         Intent intent = params.createIntent();
         try {
@@ -375,7 +342,6 @@ public class MainActivity extends AppCompatActivity implements
     public void onJsPrompt(String url, String message, String defaultValue, JsPromptResult result) {
         EditText input = new EditText(this);
         input.setText(defaultValue);
-        
         new MaterialAlertDialogBuilder(this)
             .setTitle(AppConfig.APP_NAME)
             .setMessage(message)
@@ -386,15 +352,11 @@ public class MainActivity extends AppCompatActivity implements
             .show();
     }
     
-    // JavaScriptExecutor implementation
     @Override
     public void executeJavaScript(String script) {
         runOnUiThread(() -> webView.evaluateJavascript(script, null));
     }
     
-    /**
-     * Test theme color changes - can be called from JavaScript bridge
-     */
     public void testStatusBarColor(String color) {
         if (themeManager != null) {
             themeManager.testThemeColor(color);
