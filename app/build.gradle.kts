@@ -7,7 +7,8 @@ android {
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.monstertechno.webview"
+        // YOUR NEW UNIQUE APP IDENTITY
+        applicationId = "com.alphalabstudy.app" 
         minSdk = 29
         targetSdk = 36
         versionCode = 1
