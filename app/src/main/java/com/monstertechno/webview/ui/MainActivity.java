@@ -61,10 +61,26 @@ public class MainActivity extends AppCompatActivity implements
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // This stops the app from hiding behind your phone's navigation keys!
+        // 1. Fit content properly above navigation keys
         WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
 
         setContentView(R.layout.activity_main);
+
+        // 2. FORCE WHITE BARS (Bypasses Android Dark Mode completely)
+        // Placing this AFTER setContentView ensures Dark Mode cannot override it!
+        getWindow().setStatusBarColor(android.graphics.Color.parseColor("#FFFFFF"));
+        getWindow().setNavigationBarColor(android.graphics.Color.parseColor("#FFFFFF"));
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+            getWindow().setNavigationBarDividerColor(android.graphics.Color.parseColor("#FFFFFF"));
+        }
+
+        // 3. FORCE DARK ICONS (So clock, battery, and bottom nav gestures are visible)
+        androidx.core.view.WindowInsetsControllerCompat windowController = 
+            WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        if (windowController != null) {
+            windowController.setAppearanceLightStatusBars(true);
+            windowController.setAppearanceLightNavigationBars(true);
+        }
 
         initializeManagers();
         initializeUI();
@@ -263,7 +279,7 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onPageLoadStarted(String url) {
         runOnUiThread(() -> {
-            progressBar.setVisibility(View.GONE); // FIXED: No more blue loading line!
+            progressBar.setVisibility(View.GONE); // No more blue loading line
             progressBar.setProgress(0);
             hideError();
             hideSplashScreen();
