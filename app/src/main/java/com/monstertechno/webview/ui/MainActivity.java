@@ -13,6 +13,7 @@ import android.os.Bundle;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.View;
+import android.view.WindowManager;
 import android.webkit.JsPromptResult;
 import android.webkit.JsResult;
 import android.webkit.ValueCallback;
@@ -28,7 +29,9 @@ import androidx.activity.OnBackPressedCallback;
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.appcompat.app.AppCompatDelegate;
 import androidx.core.view.WindowCompat;
+import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.google.android.material.dialog.MaterialAlertDialogBuilder;
 import com.monstertechno.webview.R;
@@ -59,46 +62,48 @@ public class MainActivity extends AppCompatActivity implements
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
+        // NUCLEAR OPTION: Completely disable Dark Mode for the App Wrapper
+        AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO);
+        
         super.onCreate(savedInstanceState);
 
-        // 1. Fit content properly above navigation keys
-        WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
-
-        setContentView(R.layout.activity_main);
-
-        // 2. FORCE WHITE BARS (Bypasses Android Dark Mode completely)
-        // Placing this AFTER setContentView ensures Dark Mode cannot override it!
+        // Force Android to let us paint the system bars
+        getWindow().addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS);
+        
+        // Paint the Header and Footer pure white
         getWindow().setStatusBarColor(android.graphics.Color.parseColor("#FFFFFF"));
         getWindow().setNavigationBarColor(android.graphics.Color.parseColor("#FFFFFF"));
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
             getWindow().setNavigationBarDividerColor(android.graphics.Color.parseColor("#FFFFFF"));
         }
 
-        // 3. FORCE DARK ICONS (So clock, battery, and bottom nav gestures are visible)
-        androidx.core.view.WindowInsetsControllerCompat windowController = 
-            WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
+        // Fit content properly so nothing overlaps
+        WindowCompat.setDecorFitsSystemWindows(getWindow(), true);
+
+        // Force clock, battery, and bottom navigation pill to be dark so they are visible
+        WindowInsetsControllerCompat windowController = WindowCompat.getInsetsController(getWindow(), getWindow().getDecorView());
         if (windowController != null) {
             windowController.setAppearanceLightStatusBars(true);
             windowController.setAppearanceLightNavigationBars(true);
         }
+
+        setContentView(R.layout.activity_main);
 
         initializeManagers();
         initializeUI();
         setupWebView();
         setupEventListeners();
 
-        // SMARTER SPA BACK BUTTON HANDLER FOR NETLIFY SITES
+        // SMARTER SPA BACK BUTTON HANDLER
         getOnBackPressedDispatcher().addCallback(this, new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
                 if (webView != null) {
                     webView.evaluateJavascript("window.history.length > 1", value -> {
                         if ("true".equals(value) && webView.canGoBack()) {
-                            webView.goBack(); // Uses native history if available
+                            webView.goBack();
                         } else {
-                            webView.evaluateJavascript("window.history.back()", null); // Forces JS history back
-                            
-                            // If we are truly at the start, close the app
+                            webView.evaluateJavascript("window.history.back()", null);
                             if (!webView.canGoBack()) {
                                 setEnabled(false);
                                 getOnBackPressedDispatcher().onBackPressed();
@@ -279,7 +284,7 @@ public class MainActivity extends AppCompatActivity implements
     @Override
     public void onPageLoadStarted(String url) {
         runOnUiThread(() -> {
-            progressBar.setVisibility(View.GONE); // No more blue loading line
+            progressBar.setVisibility(View.GONE);
             progressBar.setProgress(0);
             hideError();
             hideSplashScreen();
@@ -312,7 +317,6 @@ public class MainActivity extends AppCompatActivity implements
         if (AppConfig.isFileDownloadsEnabled()) {
             Toast.makeText(this, "Opening document...", Toast.LENGTH_SHORT).show();
             try {
-                // This hands the file off to the phone's native browser/download manager
                 Intent intent = new Intent(Intent.ACTION_VIEW);
                 intent.setData(Uri.parse(url));
                 startActivity(intent);
